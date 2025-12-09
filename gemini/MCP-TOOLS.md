@@ -27,21 +27,21 @@ The Gemini CLI module exposes its specialized analysis tools through Claude Flow
 ### Key Principles
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    MCP Tool Integration                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Claude Flow MCP Server                                         │
-│  ├── Core Tools (112 claude-flow + ruv-swarm)                  │
-│  ├── Progressive Disclosure Layer                              │
-│  └── Gemini CLI Tools (5 analysis tools)                       │
-│      ├── mcp__gemini-cli__codebase_analyze                     │
-│      ├── mcp__gemini-cli__architecture_map                     │
-│      ├── mcp__gemini-cli__security_scan                        │
-│      ├── mcp__gemini-cli__dependency_analyze                   │
-│      └── mcp__gemini-cli__coverage_assess                      │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                      MCP Tool Integration                         │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  Claude Flow MCP Server                                           │
+│  ├── Core Tools (112 claude-flow + ruv-swarm)                     │
+│  ├── Progressive Disclosure Layer                                 │
+│  └── Gemini CLI Tools (5 analysis tools)                          │
+│      ├── mcp__gemini-cli__codebase_analyze                        │
+│      ├── mcp__gemini-cli__architecture_map                        │
+│      ├── mcp__gemini-cli__security_scan                           │
+│      ├── mcp__gemini-cli__dependency_analyze                      │
+│      └── mcp__gemini-cli__coverage_assess                         │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ### Integration Benefits

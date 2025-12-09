@@ -24,11 +24,11 @@
 The Gemini CLI module integrates with Claude Flow's 54+ agents following a clear division of responsibilities:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     Claude Flow Orchestrates                         │
-│                     Claude Code Creates                              │
-│                     Gemini Reads                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│                       Claude Flow Orchestrates                        │
+│                       Claude Code Creates                             │
+│                       Gemini Reads                                    │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Role Distribution
@@ -53,28 +53,28 @@ The Gemini CLI module integrates with Claude Flow's 54+ agents following a clear
 ### The Decision Flow
 
 ```
-                    User Request
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │  Task Analysis      │
-              │  (Claude Flow)      │
-              └──────────┬──────────┘
-                         │
-           ┌─────────────┴─────────────┐
-           │                           │
-           ▼                           ▼
-   ┌───────────────┐           ┌───────────────┐
-   │  Large-Scale  │           │  Code         │
-   │  Reading?     │           │  Writing?     │
-   │  (>100 files) │           │               │
-   └───────┬───────┘           └───────┬───────┘
-           │                           │
-           ▼                           ▼
-   ┌───────────────┐           ┌───────────────┐
-   │  Gemini CLI   │           │  Claude Code  │
-   │  Analysis     │──────────▶│  Implementation│
-   └───────────────┘  context  └───────────────┘
+                      User Request
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │    Task Analysis    │
+                │    (Claude Flow)    │
+                └──────────┬──────────┘
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+             ▼                           ▼
+     ┌───────────────┐           ┌───────────────┐
+     │  Large-Scale  │           │     Code      │
+     │   Reading?    │           │   Writing?    │
+     │ (>100 files)  │           │               │
+     └───────┬───────┘           └───────┬───────┘
+             │                           │
+             ▼                           ▼
+     ┌───────────────┐           ┌───────────────┐
+     │  Gemini CLI   │           │  Claude Code  │
+     │   Analysis    │──────────▶│Implementation │
+     └───────────────┘  context  └───────────────┘
 ```
 
 ### TypeScript Implementation

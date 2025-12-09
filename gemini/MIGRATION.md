@@ -31,35 +31,35 @@ The Gemini CLI module is designed as a **fully ejectable, opt-in module** that:
 ### Module Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Claude Flow Core                             │
-│  (Unmodified - can be updated independently)                        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                    Module Registry                           │   │
-│  │  (Manages optional modules)                                  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                      │
-│                              ▼                                      │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                  Gemini CLI Module                           │   │
-│  │  (Completely isolated and ejectable)                         │   │
-│  │                                                               │   │
-│  │  src/modules/gemini-cli/                                     │   │
-│  │  ├── index.ts           (entry point)                        │   │
-│  │  ├── manager.ts         (lifecycle)                          │   │
-│  │  ├── installer.ts       (CLI installation)                   │   │
-│  │  ├── authenticator.ts   (auth methods)                       │   │
-│  │  ├── executor.ts        (analysis tools)                     │   │
-│  │  └── ...                                                     │   │
-│  │                                                               │   │
-│  │  Data Storage:                                               │   │
-│  │  ~/.claude-flow/modules/gemini-cli/                          │   │
-│  │  .claude-flow/cache/gemini/                                  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│                          Claude Flow Core                             │
+│   (Unmodified - can be updated independently)                         │
+├───────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │                      Module Registry                            │  │
+│  │   (Manages optional modules)                                    │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                               │                                       │
+│                               ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │                    Gemini CLI Module                            │  │
+│  │   (Completely isolated and ejectable)                           │  │
+│  │                                                                 │  │
+│  │   src/modules/gemini-cli/                                       │  │
+│  │   ├── index.ts           (entry point)                          │  │
+│  │   ├── manager.ts         (lifecycle)                            │  │
+│  │   ├── installer.ts       (CLI installation)                     │  │
+│  │   ├── authenticator.ts   (auth methods)                         │  │
+│  │   ├── executor.ts        (analysis tools)                       │  │
+│  │   └── ...                                                       │  │
+│  │                                                                 │  │
+│  │   Data Storage:                                                 │  │
+│  │   ~/.claude-flow/modules/gemini-cli/                            │  │
+│  │   .claude-flow/cache/gemini/                                    │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
 ### File Locations
@@ -80,25 +80,25 @@ The Gemini CLI module is designed as a **fully ejectable, opt-in module** that:
 ### State Machine
 
 ```
-┌─────────────┐     enable      ┌─────────────┐
-│  Not        │ ───────────────▶│  Enabled    │
-│  Installed  │                 │  (No Auth)  │
-└─────────────┘                 └──────┬──────┘
-       ▲                               │
-       │                          auth │
-       │ eject                         ▼
-       │                        ┌─────────────┐
-       │                        │  Enabled    │
-       │                        │  (Auth'd)   │
-       └────────────────────────┴──────┬──────┘
-                                       │
-                                  disable
-                                       ▼
-                                ┌─────────────┐
-                                │  Disabled   │
-                                │  (Config    │
-                                │  Preserved) │
-                                └─────────────┘
+┌─────────────┐      enable      ┌─────────────┐
+│     Not     │ ────────────────▶│   Enabled   │
+│  Installed  │                  │  (No Auth)  │
+└─────────────┘                  └──────┬──────┘
+       ▲                                │
+       │                           auth │
+       │ eject                          ▼
+       │                         ┌─────────────┐
+       │                         │   Enabled   │
+       │                         │  (Auth'd)   │
+       └─────────────────────────┴──────┬──────┘
+                                        │
+                                   disable
+                                        ▼
+                                 ┌─────────────┐
+                                 │  Disabled   │
+                                 │   (Config   │
+                                 │  Preserved) │
+                                 └─────────────┘
 ```
 
 ### State Definitions

@@ -41,17 +41,17 @@ This document outlines the implementation plan for integrating Gemini CLI as an 
 ### 1.1 Integration Pattern
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Claude Flow (Orchestrator)                  │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌───────────────┐  │
-│  │   Claude Code    │  │   Gemini CLI     │  │  Memory/DB    │  │
-│  │   (Editor)       │  │   (Analyzer)     │  │  (Storage)    │  │
-│  │                  │  │   [OPTIONAL]     │  │               │  │
-│  │ • Code editing   │  │ • Codebase scan  │  │ • Results     │  │
-│  │ • File ops       │  │ • Architecture   │  │ • Context     │  │
-│  │ • Commands       │  │ • Security audit │  │ • Patterns    │  │
-│  └──────────────────┘  └──────────────────┘  └───────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                     Claude Flow (Orchestrator)                    │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌───────────────┐   │
+│  │   Claude Code    │  │    Gemini CLI    │  │   Memory/DB   │   │
+│  │    (Editor)      │  │    (Analyzer)    │  │   (Storage)   │   │
+│  │                  │  │    [OPTIONAL]    │  │               │   │
+│  │ • Code editing   │  │ • Codebase scan  │  │ • Results     │   │
+│  │ • File ops       │  │ • Architecture   │  │ • Context     │   │
+│  │ • Commands       │  │ • Security audit │  │ • Patterns    │   │
+│  └──────────────────┘  └──────────────────┘  └───────────────┘   │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.2 Decision Matrix: When to Use Gemini vs Claude
@@ -942,14 +942,14 @@ npx claude-flow gemini eject --force --uninstall
 
 #### Method 1: Google Login (Recommended)
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  1. User runs: claude-flow gemini enable                        │
-│  2. System checks if Gemini CLI is installed                    │
-│  3. Browser opens for Google OAuth                              │
-│  4. User completes login                                        │
-│  5. Credentials cached locally (~/.gemini/)                     │
-│  6. Module enabled in config                                    │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│  1. User runs: claude-flow gemini enable                          │
+│  2. System checks if Gemini CLI is installed                      │
+│  3. Browser opens for Google OAuth                                │
+│  4. User completes login                                          │
+│  5. Credentials cached locally (~/.gemini/)                       │
+│  6. Module enabled in config                                      │
+└───────────────────────────────────────────────────────────────────┘
 
 Benefits:
 - Free tier: 60 req/min, 1000 req/day
@@ -959,13 +959,13 @@ Benefits:
 
 #### Method 2: API Key
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  1. User obtains key from Google AI Studio                      │
-│  2. Runs: claude-flow gemini enable --auth api-key --api-key X  │
-│  3. Key validated with test request                             │
-│  4. Key stored securely in config (encrypted)                   │
-│  5. Set as GEMINI_API_KEY for sessions                          │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│  1. User obtains key from Google AI Studio                        │
+│  2. Runs: claude-flow gemini enable --auth api-key --api-key X    │
+│  3. Key validated with test request                               │
+│  4. Key stored securely in config (encrypted)                     │
+│  5. Set as GEMINI_API_KEY for sessions                            │
+└───────────────────────────────────────────────────────────────────┘
 
 Benefits:
 - Non-interactive authentication
@@ -975,13 +975,13 @@ Benefits:
 
 #### Method 3: Vertex AI (Enterprise)
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  1. Create service account in Google Cloud                      │
-│  2. Download JSON key file                                      │
-│  3. Set GOOGLE_APPLICATION_CREDENTIALS                          │
-│  4. Run: claude-flow gemini enable --auth vertex-ai --vertex-*  │
-│  5. Enterprise quotas and security                              │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│  1. Create service account in Google Cloud                        │
+│  2. Download JSON key file                                        │
+│  3. Set GOOGLE_APPLICATION_CREDENTIALS                            │
+│  4. Run: claude-flow gemini enable --auth vertex-ai --vertex-*    │
+│  5. Enterprise quotas and security                                │
+└───────────────────────────────────────────────────────────────────┘
 
 Benefits:
 - Enterprise-grade security

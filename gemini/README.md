@@ -98,22 +98,22 @@ claude-flow/
 ### Integration Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          Claude Flow Orchestrator                        │
-│                                                                          │
-│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────┐  │
-│  │   Claude Code       │  │   Gemini CLI        │  │   Memory        │  │
-│  │   (Editor)          │  │   [OPTIONAL]        │  │   System        │  │
-│  │                     │  │                     │  │                 │  │
-│  │ • Write code        │  │ • Codebase scan     │  │ • Store results │  │
-│  │ • Edit files        │  │ • Architecture map  │  │ • Share context │  │
-│  │ • Run commands      │  │ • Security audit    │  │ • Track patterns│  │
-│  │ • Execute tests     │  │ • Dep analysis      │  │                 │  │
-│  └─────────────────────┘  └─────────────────────┘  └─────────────────┘  │
-│                                                                          │
-│  Decision Matrix: File size > 100KB OR full codebase → Use Gemini      │
-│                   Code editing OR small files → Use Claude Code         │
-└─────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                         Claude Flow Orchestrator                          │
+│                                                                           │
+│   ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────┐   │
+│   │    Claude Code      │  │    Gemini CLI       │  │     Memory      │   │
+│   │     (Editor)        │  │    [OPTIONAL]       │  │     System      │   │
+│   │                     │  │                     │  │                 │   │
+│   │ • Write code        │  │ • Codebase scan     │  │ • Store results │   │
+│   │ • Edit files        │  │ • Architecture map  │  │ • Share context │   │
+│   │ • Run commands      │  │ • Security audit    │  │ • Track patterns│   │
+│   │ • Execute tests     │  │ • Dep analysis      │  │                 │   │
+│   └─────────────────────┘  └─────────────────────┘  └─────────────────┘   │
+│                                                                           │
+│   Decision Matrix: File size > 100KB OR full codebase → Use Gemini        │
+│                    Code editing OR small files → Use Claude Code          │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
