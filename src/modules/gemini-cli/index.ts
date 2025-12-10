@@ -12,3 +12,6 @@ export * from './src/core/errors.js';
 
 // Re-export CLI command for Cliffy integration
 export { geminiCommand } from './src/cli/commands/gemini.js';
+
+// Re-export MCP components
+export * from './src/mcp/index.js';

@@ -98,7 +98,7 @@ export class GeminiCache {
   async invalidate(pattern?: { target?: string; type?: string }): Promise<number> {
     let invalidated = 0;
 
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       let shouldInvalidate = !pattern;
 
       if (pattern) {
@@ -144,7 +144,7 @@ export class GeminiCache {
    */
   getStats(): { entries: number; size: number; hitRate: number } {
     let totalSize = 0;
-    for (const entry of this.cache.values()) {
+    for (const entry of Array.from(this.cache.values())) {
       totalSize += entry.size;
     }
 
@@ -164,7 +164,7 @@ export class GeminiCache {
       let lruKey: string | null = null;
       let lruTime = Infinity;
 
-      for (const [key, entry] of this.cache.entries()) {
+      for (const [key, entry] of Array.from(this.cache.entries())) {
         if (entry.accessedAt < lruTime) {
           lruTime = entry.accessedAt;
           lruKey = key;
