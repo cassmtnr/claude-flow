@@ -93,6 +93,7 @@ async function showGeminiStatus(subArgs, flags) {
 async function runAnalysis(subArgs, flags) {
     try {
         const module = await getGeminiModule();
+        await module.initialize();
         if (!module.isEnabled()) {
             printError('Gemini module not enabled. Run `claude-flow gemini enable` first.');
             process.exit(1);
@@ -125,7 +126,7 @@ async function runAnalysis(subArgs, flags) {
                 for (const finding of result.findings.slice(0, 10)){
                     const severityIcon = finding.severity === 'critical' || finding.severity === 'high' ? '🔴' : finding.severity === 'medium' ? '🟡' : '⚪';
                     console.log(`  ${severityIcon} [${finding.severity.toUpperCase()}] ${finding.message}`);
-                    if (finding.location !== 'unknown') {
+                    if (finding.location) {
                         console.log(`     📍 ${finding.location}`);
                     }
                 }
@@ -134,9 +135,10 @@ async function runAnalysis(subArgs, flags) {
                 }
             }
             console.log('\n📊 Metrics:');
-            console.log(`  Files analyzed: ${result.metrics.filesAnalyzed}`);
-            console.log(`  Lines of code:  ${result.metrics.linesOfCode}`);
-            console.log(`  Duration:       ${result.duration}ms`);
+            console.log(`  Files analyzed: ${result.metrics.filesAnalyzed || 'N/A'}`);
+            console.log(`  Analysis type:  ${result.metrics.analysisType || 'codebase'}`);
+            console.log(`  Model:          ${result.metrics.model || 'gemini-2.5-pro'}`);
+            console.log(`  Duration:       ${(result.duration / 1000).toFixed(1)}s`);
         } else {
             printError('Analysis failed:');
             result.errors?.forEach((err)=>console.error(`  - ${err}`));
@@ -149,19 +151,19 @@ async function runAnalysis(subArgs, flags) {
 async function runSecurityScan(subArgs, flags) {
     try {
         const module = await getGeminiModule();
+        await module.initialize();
         if (!module.isEnabled()) {
             printError('Gemini module not enabled. Run `claude-flow gemini enable` first.');
-            process.exit(1);
-        }
-        const executor = module.getExecutor();
-        if (!executor) {
-            printError('Executor not available');
             process.exit(1);
         }
         const targetPath = flags.path || flags.p || '.';
         const depth = flags.depth || flags.d || 'deep';
         console.log('\n🔒 Running security scan...\n');
-        const result = await executor.securityScan(targetPath, {
+        const result = await module.analyze({
+            type: 'security',
+            target: [
+                targetPath
+            ],
             depth
         });
         if (result.success) {
@@ -173,13 +175,15 @@ async function runSecurityScan(subArgs, flags) {
                 console.log(`\n⚠️  ${criticalFindings.length} critical/high findings:`);
                 for (const finding of criticalFindings){
                     console.log(`  🔴 [${finding.severity.toUpperCase()}] ${finding.message}`);
-                    if (finding.suggestion) {
-                        console.log(`     💡 Fix: ${finding.suggestion}`);
+                    if (finding.location) {
+                        console.log(`     📍 ${finding.location}`);
                     }
                 }
             } else {
                 printSuccess('No critical or high severity issues found!');
             }
+            console.log('\n📊 Metrics:');
+            console.log(`  Duration: ${(result.duration / 1000).toFixed(1)}s`);
         } else {
             printError('Security scan failed:');
             result.errors?.forEach((err)=>console.error(`  - ${err}`));
@@ -192,25 +196,39 @@ async function runSecurityScan(subArgs, flags) {
 async function runArchitectureMap(subArgs, flags) {
     try {
         const module = await getGeminiModule();
+        await module.initialize();
         if (!module.isEnabled()) {
             printError('Gemini module not enabled. Run `claude-flow gemini enable` first.');
             process.exit(1);
         }
-        const executor = module.getExecutor();
-        if (!executor) {
-            printError('Executor not available');
-            process.exit(1);
-        }
         const targetPath = flags.path || flags.p || '.';
+        const depth = flags.depth || flags.d || 'moderate';
         console.log('\n🏗️  Mapping architecture...\n');
-        const result = await executor.architectureMap(targetPath);
+        const result = await module.analyze({
+            type: 'architecture',
+            target: [
+                targetPath
+            ],
+            depth
+        });
         if (result.success) {
             printSuccess('Architecture mapping complete\n');
+            console.log('📋 Summary:');
             console.log(result.summary);
-            if (result.rawOutput) {
-                console.log('\n📐 Architecture Details:');
-                console.log(result.rawOutput);
+            if (result.findings.length > 0) {
+                console.log('\n📐 Components:');
+                for (const finding of result.findings.slice(0, 15)){
+                    console.log(`  • ${finding.message}`);
+                    if (finding.location) {
+                        console.log(`    📍 ${finding.location}`);
+                    }
+                }
+                if (result.findings.length > 15) {
+                    console.log(`  ... and ${result.findings.length - 15} more components`);
+                }
             }
+            console.log('\n📊 Metrics:');
+            console.log(`  Duration: ${(result.duration / 1000).toFixed(1)}s`);
         } else {
             printError('Architecture mapping failed:');
             result.errors?.forEach((err)=>console.error(`  - ${err}`));
@@ -223,13 +241,9 @@ async function runArchitectureMap(subArgs, flags) {
 async function verifyFeature(subArgs, flags) {
     try {
         const module = await getGeminiModule();
+        await module.initialize();
         if (!module.isEnabled()) {
             printError('Gemini module not enabled. Run `claude-flow gemini enable` first.');
-            process.exit(1);
-        }
-        const executor = module.getExecutor();
-        if (!executor) {
-            printError('Executor not available');
             process.exit(1);
         }
         const feature = flags.feature || flags.f;
@@ -239,11 +253,48 @@ async function verifyFeature(subArgs, flags) {
             process.exit(1);
         }
         console.log(`\n🔍 Verifying: "${feature}"...\n`);
-        const result = await executor.verify(feature, targetPath);
-        const statusIcon = result.implemented ? '✅' : '❌';
-        console.log(`Status: ${statusIcon} ${result.implemented ? 'IMPLEMENTED' : 'NOT FOUND'}`);
-        console.log(`Confidence: ${result.confidence}%`);
-        console.log(`Details: ${result.details}`);
+        const result = await module.analyze({
+            type: 'codebase',
+            target: [
+                targetPath
+            ],
+            query: `Verify if this feature is implemented: "${feature}".
+              Look for evidence of implementation including:
+              - Related functions, classes, or modules
+              - Tests that cover this functionality
+              - Configuration or settings related to the feature
+
+              Respond with:
+              1. IMPLEMENTED or NOT_FOUND status
+              2. Confidence level (0-100%)
+              3. Evidence of implementation (file paths, function names)
+              4. Any gaps or missing pieces`,
+            depth: 'moderate'
+        });
+        if (result.success) {
+            const responseText = result.summary.toLowerCase();
+            const implemented = responseText.includes('implemented') && !responseText.includes('not implemented') && !responseText.includes('not_found');
+            const confidenceMatch = result.summary.match(/(\d{1,3})%/);
+            const confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : implemented ? 75 : 25;
+            const statusIcon = implemented ? '✅' : '❌';
+            console.log(`Status: ${statusIcon} ${implemented ? 'IMPLEMENTED' : 'NOT FOUND'}`);
+            console.log(`Confidence: ${confidence}%`);
+            console.log(`\n📋 Details:`);
+            console.log(result.summary);
+            if (result.findings.length > 0) {
+                console.log('\n🔎 Evidence:');
+                for (const finding of result.findings.slice(0, 5)){
+                    console.log(`  • ${finding.message}`);
+                    if (finding.location) {
+                        console.log(`    📍 ${finding.location}`);
+                    }
+                }
+            }
+            console.log(`\n📊 Duration: ${(result.duration / 1000).toFixed(1)}s`);
+        } else {
+            printError('Verification failed:');
+            result.errors?.forEach((err)=>console.error(`  - ${err}`));
+        }
     } catch (err) {
         printError(`Verification failed: ${err.message}`);
         process.exit(1);
