@@ -52,7 +52,7 @@ export class GeminiCache {
     }
     async invalidate(pattern) {
         let invalidated = 0;
-        for (const [key, entry] of this.cache.entries()){
+        for (const [key, entry] of Array.from(this.cache.entries())){
             let shouldInvalidate = !pattern;
             if (pattern) {
                 const value = entry.value;
@@ -80,7 +80,7 @@ export class GeminiCache {
     }
     getStats() {
         let totalSize = 0;
-        for (const entry of this.cache.values()){
+        for (const entry of Array.from(this.cache.values())){
             totalSize += entry.size;
         }
         return {
@@ -93,7 +93,7 @@ export class GeminiCache {
         while(this.cache.size >= this.config.maxSize){
             let lruKey = null;
             let lruTime = Infinity;
-            for (const [key, entry] of this.cache.entries()){
+            for (const [key, entry] of Array.from(this.cache.entries())){
                 if (entry.accessedAt < lruTime) {
                     lruTime = entry.accessedAt;
                     lruKey = key;
