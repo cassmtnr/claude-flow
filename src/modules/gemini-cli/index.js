@@ -183,7 +183,7 @@ class GeminiModuleManager extends EventEmitter {
     await this.initialize();
 
     // Check if gemini CLI is installed
-    const { exec } = await import('child_process');
+    const { exec, spawn } = await import('child_process');
     const { promisify } = await import('util');
     const execAsync = promisify(exec);
 
@@ -193,7 +193,7 @@ class GeminiModuleManager extends EventEmitter {
       if (!options.skipInstall) {
         console.log('📦 Installing Gemini CLI...');
         try {
-          await execAsync('npm install -g @anthropic-ai/gemini-cli', { timeout: 120000 });
+          await execAsync('npm install -g @google/gemini-cli', { timeout: 120000 });
           console.log('✅ Gemini CLI installed');
         } catch (err) {
           throw new Error(`Failed to install Gemini CLI: ${err.message}`);
@@ -201,8 +201,60 @@ class GeminiModuleManager extends EventEmitter {
       }
     }
 
+    const authMethod = options.authMethod || 'google-login';
+
+    // Perform authentication based on method
+    if (authMethod === 'google-login') {
+      // Check if already authenticated
+      const oauthCredsPath = path.join(os.homedir(), '.gemini', 'oauth_creds.json');
+      let alreadyAuthenticated = false;
+      try {
+        await fs.access(oauthCredsPath);
+        alreadyAuthenticated = true;
+      } catch {
+        // Not authenticated yet
+      }
+
+      if (alreadyAuthenticated && !options.force) {
+        console.log('✅ Already authenticated with Google OAuth');
+      } else {
+        console.log('🔐 Starting Google OAuth login...');
+        console.log('   Opening browser for authentication...');
+
+        await new Promise((resolve, reject) => {
+          const child = spawn('gemini', ['auth', 'login'], {
+            stdio: 'inherit', // Show output directly to user
+          });
+
+          child.on('close', (code) => {
+            if (code === 0) {
+              console.log('✅ Google authentication successful');
+              resolve();
+            } else {
+              reject(new Error(`Authentication failed with code ${code}`));
+            }
+          });
+
+          child.on('error', (err) => {
+            reject(new Error(`Failed to start auth: ${err.message}`));
+          });
+        });
+      }
+    } else if (authMethod === 'api-key') {
+      if (!options.apiKey) {
+        throw new Error('API key required for api-key authentication');
+      }
+      console.log('🔑 Setting up API key authentication...');
+      // API key will be stored in config
+    } else if (authMethod === 'vertex-ai') {
+      if (!options.vertexProject) {
+        throw new Error('Vertex project required for vertex-ai authentication');
+      }
+      console.log('☁️  Setting up Vertex AI authentication...');
+    }
+
     this.config.enabled = true;
-    this.config.authMethod = options.authMethod || 'google-login';
+    this.config.authMethod = authMethod;
     if (options.apiKey) this.config.apiKey = options.apiKey;
     if (options.vertexProject) this.config.vertexProject = options.vertexProject;
     if (options.vertexLocation) this.config.vertexLocation = options.vertexLocation;
@@ -238,6 +290,7 @@ class GeminiModuleManager extends EventEmitter {
     let installed = false;
     let version = undefined;
     let binaryPath = undefined;
+    let authenticated = false;
 
     try {
       const { stdout } = await execAsync('which gemini');
@@ -249,12 +302,32 @@ class GeminiModuleManager extends EventEmitter {
       } catch {}
     } catch {}
 
+    // Check authentication status based on auth method
+    const authMethod = this.config.authMethod || 'google-login';
+    try {
+      if (authMethod === 'google-login') {
+        // Check if OAuth credentials file exists
+        const oauthCredsPath = path.join(os.homedir(), '.gemini', 'oauth_creds.json');
+        await fs.access(oauthCredsPath);
+        authenticated = true;
+      } else if (authMethod === 'api-key') {
+        // Check if API key is configured
+        authenticated = !!this.config.apiKey;
+      } else if (authMethod === 'vertex-ai') {
+        // Check if Vertex AI project is configured
+        authenticated = !!this.config.vertexProject;
+      }
+    } catch {
+      // Credentials file doesn't exist or other error
+      authenticated = false;
+    }
+
     return {
       installed,
       enabled: this.config.enabled,
-      authenticated: false, // Would need to check credentials
+      authenticated,
       version,
-      authMethod: this.config.authMethod,
+      authMethod,
       binaryPath,
       quotaStatus: this.rateLimiter.getQuotaStatus(),
       lastCheck: new Date(),
@@ -274,19 +347,245 @@ class GeminiModuleManager extends EventEmitter {
       throw new Error('Module not enabled. Run `claude-flow gemini enable` first.');
     }
 
-    // Placeholder - actual execution would need the executor
-    return {
-      success: false,
-      requestId: `gemini-${Date.now()}`,
-      timestamp: new Date(),
-      duration: 0,
-      tokenUsage: { prompt: 0, completion: 0, total: 0 },
-      summary: 'Analysis not yet implemented in JS bridge. Please use the TypeScript module.',
-      findings: [],
-      metrics: { filesAnalyzed: 0, linesOfCode: 0 },
-      recommendations: [],
-      errors: ['JS bridge does not support analysis yet. Build and use the compiled TypeScript module.'],
+    const startTime = Date.now();
+    const requestId = `gemini-${startTime}`;
+
+    // Check rate limits
+    if (!this.rateLimiter.canMakeRequest()) {
+      await this.rateLimiter.waitForQuota();
+    }
+
+    // Build the analysis prompt based on request type
+    const analysisType = request.type || 'codebase';
+    const targetPaths = request.target || ['.'];
+    const query = request.query;
+    const depth = request.depth || 'moderate';
+
+    let prompt = this.buildAnalysisPrompt(analysisType, targetPaths, query, depth);
+
+    // Check cache first
+    const cacheKey = this.cache.generateKey({ prompt, type: analysisType, paths: targetPaths });
+    const cachedResult = await this.cache.get(cacheKey);
+    if (cachedResult) {
+      return {
+        ...cachedResult,
+        cached: true,
+        requestId,
+      };
+    }
+
+    try {
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+
+      // Run gemini CLI with the analysis prompt
+      const model = this.config.defaultModel || 'gemini-2.5-pro';
+      const escapedPrompt = prompt.replace(/"/g, '\\"').replace(/`/g, '\\`');
+
+      const { stdout, stderr } = await execAsync(
+        `gemini -m ${model} --output-format json "${escapedPrompt}"`,
+        {
+          timeout: this.config.analysis?.timeout || 300000,
+          maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large responses
+          cwd: targetPaths[0] !== '.' ? targetPaths[0] : process.cwd(),
+        }
+      );
+
+      // Consume rate limit token
+      this.rateLimiter.consumeToken();
+
+      const duration = Date.now() - startTime;
+
+      // Parse the JSON output from gemini
+      let geminiResponse;
+      try {
+        geminiResponse = JSON.parse(stdout);
+      } catch {
+        // If not valid JSON, treat as raw text response
+        geminiResponse = { response: stdout };
+      }
+
+      const result = {
+        success: true,
+        requestId,
+        timestamp: new Date(),
+        duration,
+        tokenUsage: geminiResponse.usage || { prompt: 0, completion: 0, total: 0 },
+        summary: this.extractSummary(geminiResponse),
+        findings: this.extractFindings(geminiResponse, analysisType),
+        metrics: {
+          filesAnalyzed: targetPaths.length,
+          analysisType,
+          model,
+        },
+        recommendations: this.extractRecommendations(geminiResponse),
+        rawOutput: geminiResponse.response || stdout,
+        errors: stderr ? [stderr] : [],
+      };
+
+      // Cache the result
+      await this.cache.set(cacheKey, result);
+
+      return result;
+    } catch (err) {
+      const duration = Date.now() - startTime;
+      return {
+        success: false,
+        requestId,
+        timestamp: new Date(),
+        duration,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 },
+        summary: `Analysis failed: ${err.message}`,
+        findings: [],
+        metrics: { filesAnalyzed: 0, analysisType },
+        recommendations: [],
+        errors: [err.message],
+      };
+    }
+  }
+
+  buildAnalysisPrompt(type, paths, query, depth) {
+    const depthInstructions = {
+      quick: 'Provide a brief high-level overview.',
+      moderate: 'Provide a balanced analysis with key details.',
+      deep: 'Provide an exhaustive, detailed analysis.',
     };
+
+    const typePrompts = {
+      codebase: `Analyze this codebase comprehensively. Focus on:
+- Overall architecture and design patterns
+- Code organization and structure
+- Key components and their responsibilities
+- Potential issues or areas for improvement
+- Technology stack and dependencies`,
+
+      security: `Perform a security analysis of this codebase. Focus on:
+- Common vulnerabilities (OWASP Top 10)
+- Authentication and authorization patterns
+- Input validation and sanitization
+- Sensitive data handling
+- Security best practices violations
+Rate each finding by severity: critical, high, medium, low`,
+
+      architecture: `Map the architecture of this codebase. Include:
+- System components and their relationships
+- Data flow between components
+- External integrations and APIs
+- Design patterns used
+- Potential architectural improvements`,
+
+      dependencies: `Analyze the dependencies in this project. Include:
+- Direct vs transitive dependencies
+- Outdated packages
+- Security vulnerabilities in dependencies
+- Unused dependencies
+- Dependency conflicts or issues`,
+
+      performance: `Analyze this codebase for performance. Focus on:
+- Potential bottlenecks
+- Memory usage patterns
+- Async/await usage and potential issues
+- Database query patterns
+- Caching opportunities`,
+    };
+
+    let prompt = typePrompts[type] || typePrompts.codebase;
+
+    if (query) {
+      prompt += `\n\nSpecific focus: ${query}`;
+    }
+
+    prompt += `\n\n${depthInstructions[depth] || depthInstructions.moderate}`;
+    prompt += `\n\nTarget paths: ${paths.join(', ')}`;
+    prompt += `\n\nProvide your response in a structured format with clear sections.`;
+
+    return prompt;
+  }
+
+  extractSummary(response) {
+    const maxLength = 2000; // Allow longer summaries
+    if (typeof response === 'string') return response.slice(0, maxLength);
+    if (response.response) return response.response.slice(0, maxLength);
+    if (response.summary) return response.summary;
+    return 'Analysis completed. See rawOutput for details.';
+  }
+
+  extractFindings(response, type) {
+    // Try to parse structured findings from the response
+    const text = response.response || response.text || JSON.stringify(response);
+    const findings = [];
+
+    // Look for bullet points or numbered items that could be findings
+    const lines = text.split('\n');
+    let currentSection = null;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Track section headers (lines ending with : or starting with ##)
+      if (trimmed.match(/^#+\s+/) || (trimmed.endsWith(':') && trimmed.length < 100)) {
+        currentSection = trimmed.replace(/^#+\s*/, '').replace(/:$/, '');
+        continue;
+      }
+
+      if (trimmed.match(/^[-*•]\s+/) || trimmed.match(/^\d+\.\s+/)) {
+        const content = trimmed.replace(/^[-*•\d.]+\s+/, '');
+        if (content.length > 10) {
+          // Try to extract file path references
+          const fileMatch = content.match(/`([^`]+\.(js|ts|jsx|tsx|py|go|rs|java|cpp|c|h|json|yaml|yml))`/);
+          const pathMatch = content.match(/(?:in|at|from|file)\s+[`"]?([a-zA-Z0-9_/.-]+\.(js|ts|jsx|tsx|py|go|rs|java|cpp|c|h|json|yaml|yml))[`"]?/i);
+
+          findings.push({
+            type,
+            message: content,
+            severity: this.inferSeverity(content),
+            location: fileMatch?.[1] || pathMatch?.[1] || currentSection || null,
+            category: currentSection || type,
+          });
+        }
+      }
+    }
+
+    return findings.slice(0, 50); // Limit to 50 findings
+  }
+
+  inferSeverity(text) {
+    const lower = text.toLowerCase();
+    if (lower.includes('critical') || lower.includes('severe') || lower.includes('urgent')) {
+      return 'critical';
+    }
+    if (lower.includes('high') || lower.includes('important') || lower.includes('significant')) {
+      return 'high';
+    }
+    if (lower.includes('medium') || lower.includes('moderate')) {
+      return 'medium';
+    }
+    return 'low';
+  }
+
+  extractRecommendations(response) {
+    const text = response.response || response.text || JSON.stringify(response);
+    const recommendations = [];
+
+    // Look for recommendation patterns
+    const patterns = [
+      /recommend[s]?:?\s*([^.]+\.)/gi,
+      /suggest[s]?:?\s*([^.]+\.)/gi,
+      /consider:?\s*([^.]+\.)/gi,
+      /should:?\s*([^.]+\.)/gi,
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(text)) !== null) {
+        if (match[1] && match[1].length > 10) {
+          recommendations.push(match[1].trim());
+        }
+      }
+    }
+
+    return [...new Set(recommendations)].slice(0, 20); // Dedupe and limit
   }
 
   getConfig() {
