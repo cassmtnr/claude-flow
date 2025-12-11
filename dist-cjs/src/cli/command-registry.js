@@ -25,6 +25,7 @@ import { HelpFormatter } from './help-formatter.js';
 import hiveMindOptimizeCommand from './simple-commands/hive-mind-optimize.js';
 import { neuralCommand } from './simple-commands/neural.js';
 import { goalCommand } from './simple-commands/goal.js';
+import { geminiCommand } from '../modules/gemini-cli/src/cli/simple-commands/gemini.js';
 import { showUnifiedMetrics, fixTaskAttribution } from './simple-commands/swarm-metrics-integration.js';
 import { migrateHooksCommandConfig } from './simple-commands/migrate-hooks.js';
 import { fixHookVariablesCommand, fixHookVariablesCommandConfig } from './simple-commands/fix-hook-variables.js';
@@ -671,6 +672,29 @@ Goal Module Features:
   • Adaptive replanning on failures
   • Mixed LLM + code execution
   • Cost-optimized action sequences`
+    });
+    commandRegistry.set('gemini', {
+        handler: geminiCommand,
+        description: '🤖 Gemini CLI integration for large-scale codebase analysis',
+        usage: 'gemini <command> [options]',
+        examples: [
+            'gemini enable --auth api-key --api-key KEY  # Enable with API key',
+            'gemini enable                               # Enable with Google login',
+            'gemini status                               # Show module status',
+            'gemini analyze --type security              # Run security scan',
+            'gemini architecture                         # Map system architecture',
+            'gemini verify --feature "user auth"         # Verify feature'
+        ],
+        details: `
+Gemini CLI Module Features:
+  • 1M+ token context window for large codebase analysis
+  • Multiple analysis types: codebase, security, architecture, dependencies
+  • Three auth methods: Google Login, API Key, Vertex AI
+  • Result caching with LRU eviction
+  • Rate limiting with token bucket algorithm
+  • Integration with Claude Flow memory system
+
+Claude Flow orchestrates, Claude Code creates, Gemini reads.`
     });
     commandRegistry.set('pair', {
         handler: async (args, flags)=>{
