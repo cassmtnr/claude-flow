@@ -28,10 +28,11 @@
 - **🪝 Advanced Hooks System**: Automated workflows with pre/post operation hooks
 - **📊 GitHub Integration**: 6 specialized modes for repository management
 - **🌐 Flow Nexus Cloud**: E2B sandboxes, AI swarms, challenges, and marketplace
+- **🤖 Gemini CLI Module**: Large-scale codebase analysis with 1M+ token context (Gemini 2.5 Pro)
 
 > 🔥 **Revolutionary AI Coordination**: Build faster, smarter, and more efficiently with AI-powered development orchestration
 >
-> 🆕 **NEW: AgentDB Integration**: 96x-164x performance boost with semantic vector search, reflexion memory, and skill library auto-consolidation
+> 🆕 **NEW: Gemini CLI Integration**: Analyze entire codebases with 1M+ token context - security scans, architecture mapping, and feature verification
 
 
 ---
@@ -374,6 +375,14 @@ npx claude-flow@alpha memory query "microservices patterns" --reasoningbank
   - [Backward Compatibility](./docs/agentdb/BACKWARD_COMPATIBILITY_GUARANTEE.md) - 100% compatibility guarantee
   - [Integration Plan](./docs/agentdb/AGENTDB_INTEGRATION_PLAN.md) - Planning and design
   - [Optimization Report](./docs/agentdb/OPTIMIZATION_REPORT.md) - Performance analysis
+
+### **🤖 Gemini CLI Module (1M+ Token Context)**
+- **[Gemini CLI Documentation](./src/modules/gemini-cli/docs/)** - 🆕 Large-scale codebase analysis with Gemini 2.5 Pro
+  - [Integration Guide](./src/modules/gemini-cli/docs/INTEGRATION-GUIDE.md) - Complete setup and usage guide
+  - [CLI Commands](./src/modules/gemini-cli/docs/CLI-COMMANDS.md) - All available commands
+  - [Authentication](./src/modules/gemini-cli/docs/AUTHENTICATOR.md) - Google OAuth, API Key, Vertex AI
+  - [MCP Tools](./src/modules/gemini-cli/docs/MCP-TOOLS.md) - 5 analysis tools for MCP integration
+  - [Architecture](./src/modules/gemini-cli/docs/EXECUTOR.md) - Module architecture and design
 
 ### **⚡ Performance & Quality**
 - **[Performance Documentation](./docs/performance/)** - Optimization guides and benchmarks
