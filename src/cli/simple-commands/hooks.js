@@ -6,15 +6,45 @@ import {
   checkRuvSwarmAvailable,
 } from '../utils.js';
 import { SqliteMemoryStore } from '../../memory/sqlite-store.js';
+import { InMemoryStore } from '../../memory/in-memory-store.js';
 
 // Initialize memory store
 let memoryStore = null;
+let storeInitFailed = false;
 
 async function getMemoryStore() {
-  if (!memoryStore) {
+  if (memoryStore) return memoryStore;
+
+  // If we already failed, return a working in-memory store
+  if (storeInitFailed) {
+    if (!memoryStore) {
+      memoryStore = new InMemoryStore();
+      await memoryStore.initialize();
+    }
+    return memoryStore;
+  }
+
+  try {
     memoryStore = new SqliteMemoryStore();
     await memoryStore.initialize();
+  } catch (err) {
+    // Check if it's a native module error (NODE_MODULE_VERSION mismatch)
+    const isNativeModuleError =
+      err.message?.includes('NODE_MODULE_VERSION') ||
+      err.message?.includes('was compiled against a different Node.js version') ||
+      err.message?.includes('better-sqlite3') ||
+      err.message?.includes('SQLite is not available');
+
+    if (isNativeModuleError) {
+      printWarning(`SQLite unavailable, using in-memory storage for hooks (data won't persist)`);
+      storeInitFailed = true;
+      memoryStore = new InMemoryStore();
+      await memoryStore.initialize();
+    } else {
+      throw err;
+    }
   }
+
   return memoryStore;
 }
 
@@ -176,7 +206,7 @@ async function preTaskCommand(subArgs, flags) {
             { namespace: 'hooks:ruv-swarm' },
           );
 
-          printSuccess(`✅ Pre-task hook completed successfully`);
+          printSuccess(`Pre-task hook completed successfully`);
         }
       }
     } catch (err) {
@@ -331,7 +361,7 @@ async function preEditCommand(subArgs, flags) {
     }
 
     console.log(`  💾 Pre-edit state saved to .swarm/memory.db`);
-    printSuccess(`✅ Pre-edit hook completed`);
+    printSuccess(`Pre-edit hook completed`);
   } catch (err) {
     printError(`Pre-edit hook failed: ${err.message}`);
   }
@@ -422,7 +452,7 @@ async function preBashCommand(subArgs, flags) {
 
     console.log(`  💾 Command logged to .swarm/memory.db`);
     console.log(`  🔒 Safety check: ${safetyResult.toUpperCase()}`);
-    printSuccess(`✅ Pre-bash hook completed`);
+    printSuccess(`Pre-bash hook completed`);
   } catch (err) {
     printError(`Pre-bash hook failed: ${err.message}`);
   }
@@ -471,7 +501,7 @@ async function postTaskCommand(subArgs, flags) {
     }
 
     console.log(`  💾 Task completion saved to .swarm/memory.db`);
-    printSuccess(`✅ Post-task hook completed`);
+    printSuccess(`Post-task hook completed`);
   } catch (err) {
     printError(`Post-task hook failed: ${err.message}`);
   }
@@ -651,7 +681,7 @@ async function postEditCommand(subArgs, flags) {
     );
 
     console.log(`  💾 Post-edit data saved to .swarm/memory.db`);
-    printSuccess(`✅ Post-edit hook completed`);
+    printSuccess(`Post-edit hook completed`);
   } catch (err) {
     printError(`Post-edit hook failed: ${err.message}`);
   }
@@ -772,7 +802,7 @@ async function postBashCommand(subArgs, flags) {
     );
 
     console.log(`  💾 Command execution logged to .swarm/memory.db`);
-    printSuccess(`✅ Post-bash hook completed`);
+    printSuccess(`Post-bash hook completed`);
   } catch (err) {
     printError(`Post-bash hook failed: ${err.message}`);
   }
@@ -814,7 +844,7 @@ async function postSearchCommand(subArgs, flags) {
     ); // 1 hour TTL
 
     console.log(`  💾 Search results cached to .swarm/memory.db`);
-    printSuccess(`✅ Post-search hook completed`);
+    printSuccess(`Post-search hook completed`);
   } catch (err) {
     printError(`Post-search hook failed: ${err.message}`);
   }
@@ -846,7 +876,7 @@ async function mcpInitializedCommand(subArgs, flags) {
     });
 
     console.log(`  💾 MCP session saved to .swarm/memory.db`);
-    printSuccess(`✅ MCP initialized hook completed`);
+    printSuccess(`MCP initialized hook completed`);
   } catch (err) {
     printError(`MCP initialized hook failed: ${err.message}`);
   }
@@ -889,7 +919,7 @@ async function agentSpawnedCommand(subArgs, flags) {
     );
 
     console.log(`  💾 Agent registered to .swarm/memory.db`);
-    printSuccess(`✅ Agent spawned hook completed`);
+    printSuccess(`Agent spawned hook completed`);
   } catch (err) {
     printError(`Agent spawned hook failed: ${err.message}`);
   }
@@ -921,7 +951,7 @@ async function taskOrchestratedCommand(subArgs, flags) {
     });
 
     console.log(`  💾 Orchestration saved to .swarm/memory.db`);
-    printSuccess(`✅ Task orchestrated hook completed`);
+    printSuccess(`Task orchestrated hook completed`);
   } catch (err) {
     printError(`Task orchestrated hook failed: ${err.message}`);
   }
@@ -952,7 +982,7 @@ async function neuralTrainedCommand(subArgs, flags) {
     });
 
     console.log(`  💾 Training results saved to .swarm/memory.db`);
-    printSuccess(`✅ Neural trained hook completed`);
+    printSuccess(`Neural trained hook completed`);
   } catch (err) {
     printError(`Neural trained hook failed: ${err.message}`);
   }
@@ -1076,7 +1106,7 @@ async function sessionEndCommand(subArgs, flags) {
       memoryStore = null;
     }
 
-    printSuccess(`✅ Session-end hook completed`);
+    printSuccess(`Session-end hook completed`);
   } catch (err) {
     printError(`Session-end hook failed: ${err.message}`);
   }
@@ -1119,7 +1149,7 @@ async function sessionRestoreCommand(subArgs, flags) {
       );
 
       console.log(`  💾 Session restored from .swarm/memory.db`);
-      printSuccess(`✅ Session restore completed`);
+      printSuccess(`Session restore completed`);
     } else {
       printWarning(`No session found with ID: ${sessionId}`);
     }
@@ -1160,7 +1190,7 @@ async function notifyCommand(subArgs, flags) {
     console.log(`  🐝 Swarm: ${swarmStatus}`);
 
     console.log(`\n  💾 Notification saved to .swarm/memory.db`);
-    printSuccess(`✅ Notify hook completed`);
+    printSuccess(`Notify hook completed`);
   } catch (err) {
     printError(`Notify hook failed: ${err.message}`);
   }
