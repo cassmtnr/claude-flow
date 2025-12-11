@@ -267,7 +267,7 @@ describe('GeminiInstaller', () => {
       const result = await installer.install({ method: 'npm' });
 
       expect(mockExec).toHaveBeenCalledWith(
-        expect.stringContaining('npm install -g @anthropic-ai/gemini'),
+        expect.stringContaining('npm install -g @google/gemini-cli'),
         expect.any(Function)
       );
       expect(result.success).toBe(true);

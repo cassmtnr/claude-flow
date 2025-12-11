@@ -122,9 +122,9 @@ export class GeminiInstaller {
     console.log('📦 Installing Gemini CLI...');
 
     try {
-      // Use npm to install globally
+      // Use npm to install globally (Gemini CLI by Google)
       await execAsync(
-        'npm install -g @anthropic-ai/gemini-cli',
+        'npm install -g @google/gemini-cli',
         { timeout: 120000 } // 2 minute timeout
       );
 
@@ -162,7 +162,7 @@ export class GeminiInstaller {
     console.log('🗑️  Uninstalling Gemini CLI...');
 
     try {
-      await execAsync('npm uninstall -g @anthropic-ai/gemini-cli', { timeout: 60000 });
+      await execAsync('npm uninstall -g @google/gemini-cli', { timeout: 60000 });
 
       // Clear cached values
       this.cachedPath = null;
@@ -190,7 +190,7 @@ export class GeminiInstaller {
     console.log('🔄 Updating Gemini CLI...');
 
     try {
-      await execAsync('npm update -g @anthropic-ai/gemini-cli', { timeout: 120000 });
+      await execAsync('npm update -g @google/gemini-cli', { timeout: 120000 });
 
       // Clear cached values
       this.cachedPath = null;
@@ -220,7 +220,7 @@ export class GeminiInstaller {
 To install Gemini CLI manually:
 
 1. Using npm (recommended):
-   npm install -g @anthropic-ai/gemini-cli
+   npm install -g @google/gemini-cli
 
 2. Verify installation:
    gemini --version
@@ -229,7 +229,7 @@ To install Gemini CLI manually:
    gemini auth login
 
 For more information, visit:
-https://github.com/anthropics/gemini-cli
+https://github.com/google-gemini/gemini-cli
     `.trim();
   }
 

@@ -174,6 +174,26 @@ export class GeminiAuthenticator {
             method: 'vertex-ai'
         };
     }
+    async ensureSecurePermissions() {
+        try {
+            await fs.mkdir(this.credentialsPath, {
+                recursive: true,
+                mode: 0o700
+            });
+            await fs.chmod(this.credentialsPath, 0o700);
+            try {
+                const files = await fs.readdir(this.credentialsPath);
+                for (const file of files){
+                    if (file.endsWith('.json')) {
+                        const filePath = path.join(this.credentialsPath, file);
+                        await fs.chmod(filePath, 0o600);
+                    }
+                }
+            } catch  {}
+        } catch (error) {
+            console.warn('Warning: Could not set secure permissions on credentials directory');
+        }
+    }
     async logout() {
         console.log('🔓 Clearing authentication...');
         delete process.env.GEMINI_API_KEY;
@@ -196,10 +216,11 @@ export class GeminiAuthenticator {
     }
     async testApiKey(key) {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${key}`, {
+            const response = await fetch('https://generativelanguage.googleapis.com/v1/models', {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': key
                 }
             });
             if (response.ok) {

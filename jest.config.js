@@ -20,6 +20,8 @@ export default {
     '<rootDir>/tests/.*\\.broken$',
     // Tests that reference non-existent infrastructure (test.utils, fixtures, etc.)
     '<rootDir>/tests/unit/coordination/coordination-system.test.ts',
+    // Vitest tests (incompatible with Jest)
+    '<rootDir>/tests/unit/utils/error-recovery.test.ts',
     '<rootDir>/tests/unit/memory/memory-backends.test.ts',
     // Tests with broken imports (default import of CommonJS module)
     '<rootDir>/src/verification/tests/mocks/false-reporting-scenarios.test.ts',

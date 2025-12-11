@@ -279,6 +279,35 @@ export class GeminiAuthenticator {
   }
 
   /**
+   * Ensure secure file permissions on credentials directory
+   * Directory: 700 (owner only), Files: 600 (owner read/write only)
+   */
+  async ensureSecurePermissions(): Promise<void> {
+    try {
+      // Ensure directory exists with secure permissions (0o700)
+      await fs.mkdir(this.credentialsPath, { recursive: true, mode: 0o700 });
+
+      // Set directory permissions explicitly
+      await fs.chmod(this.credentialsPath, 0o700);
+
+      // Set secure permissions on all JSON credential files (0o600)
+      try {
+        const files = await fs.readdir(this.credentialsPath);
+        for (const file of files) {
+          if (file.endsWith('.json')) {
+            const filePath = path.join(this.credentialsPath, file);
+            await fs.chmod(filePath, 0o600);
+          }
+        }
+      } catch {
+        // Directory might not have files yet
+      }
+    } catch (error) {
+      console.warn('Warning: Could not set secure permissions on credentials directory');
+    }
+  }
+
+  /**
    * Logout / clear credentials
    */
   async logout(): Promise<void> {
@@ -316,13 +345,14 @@ export class GeminiAuthenticator {
 
   private async testApiKey(key: string): Promise<{ valid: boolean; error?: string }> {
     try {
-      // Make a minimal API request to test the key
+      // Make a minimal API request to test the key using header (more secure than URL param)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models?key=${key}`,
+        'https://generativelanguage.googleapis.com/v1/models',
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'x-goog-api-key': key,
           },
         }
       );

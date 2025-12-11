@@ -30,7 +30,7 @@ class TestGeminiInstaller {
   }
 
   async install(): Promise<{ success: boolean; path: string; version: string }> {
-    this.installedPath = `${this.npmGlobalPath}/@anthropic-ai/gemini-cli/bin/gemini`;
+    this.installedPath = `${this.npmGlobalPath}/@google/gemini-cli/bin/gemini`;
     this.installedVersion = '1.0.0';
     return {
       success: true,

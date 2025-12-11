@@ -2304,6 +2304,76 @@ Now, please proceed with the task: ${task}`;
             }
         }
     });
+    cli.command({
+        name: 'gemini',
+        description: '🤖 Gemini CLI integration for large-scale codebase analysis (1M+ tokens)',
+        options: [
+            {
+                name: 'auth',
+                short: 'a',
+                description: 'Auth method: google-login, api-key, vertex-ai',
+                type: 'string'
+            },
+            {
+                name: 'api-key',
+                description: 'API key for api-key auth',
+                type: 'string'
+            },
+            {
+                name: 'vertex-project',
+                description: 'GCP project ID for Vertex AI',
+                type: 'string'
+            },
+            {
+                name: 'vertex-location',
+                description: 'GCP region (default: us-central1)',
+                type: 'string'
+            },
+            {
+                name: 'path',
+                short: 'p',
+                description: 'Path to analyze',
+                type: 'string'
+            },
+            {
+                name: 'type',
+                short: 't',
+                description: 'Analysis type: codebase, security, architecture',
+                type: 'string'
+            },
+            {
+                name: 'depth',
+                short: 'd',
+                description: 'Depth: surface, moderate, deep, comprehensive',
+                type: 'string'
+            },
+            {
+                name: 'feature',
+                short: 'f',
+                description: 'Feature to verify',
+                type: 'string'
+            },
+            {
+                name: 'force',
+                description: 'Force operation',
+                type: 'boolean'
+            },
+            {
+                name: 'clear',
+                description: 'Clear cache',
+                type: 'boolean'
+            },
+            {
+                name: 'stats',
+                description: 'Show cache stats',
+                type: 'boolean'
+            }
+        ],
+        action: async (ctx)=>{
+            const { geminiCommand } = await import('../../modules/gemini-cli/src/cli/simple-commands/gemini.js');
+            await geminiCommand(ctx.args, ctx.flags);
+        }
+    });
     for (const command of enterpriseCommands){
         cli.command(command);
     }
