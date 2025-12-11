@@ -95,7 +95,6 @@ USAGE:
 🎮 ENTERPRISE QUICK START:
   # Initialize enterprise environment
   npx claude-flow@2.0.0 init --sparc
-
   # Start enterprise orchestration with swarm intelligence
   ./claude-flow start --ui --swarm
 
